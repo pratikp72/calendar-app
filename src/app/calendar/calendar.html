@@ -1,0 +1,123 @@
+<div class="calendar-container">
+  <!-- Header Controls -->
+  <div class="calendar-header">
+    <div class="navigation">
+      <button (click)="currentView === 'week' ? navigateWeek(-1) : navigateDay(-1)" class="nav-btn">‹</button>
+      <h2>{{ currentView === 'week' ? formatDate(weekDays[0]) + ' - ' + formatDate(weekDays[6]) : formatDate(currentDate) }}</h2>
+      <button (click)="currentView === 'week' ? navigateWeek(1) : navigateDay(1)" class="nav-btn">›</button>
+    </div>
+    <div class="view-toggle">
+      <button [class.active]="currentView === 'week'" (click)="switchView('week')">Week</button>
+      <button [class.active]="currentView === 'day'" (click)="switchView('day')">Day</button>
+    </div>
+  </div>
+
+  <!-- Week View -->
+  <div *ngIf="currentView === 'week'" class="calendar-grid">
+    <!-- Day Headers -->
+    <div class="day-headers">
+      <div class="hour-column"></div>
+      <div *ngFor="let day of weekDays" class="day-header">
+        {{ formatDate(day) }}
+      </div>
+    </div>
+
+    <!-- Time Slots -->
+    <div class="time-slots">
+      <div *ngFor="let hour of hours" class="hour-row">
+        <div class="hour-label">{{ hour.toString().padStart(2, '0') }}:00</div>
+        <div *ngFor="let day of weekDays" 
+             class="time-slot" 
+             (click)="openAppointmentModal(day, hour)"
+             (dragover)="onDragOver($event)"
+             (drop)="onDrop($event, day, hour)">
+          
+          <!-- Appointments -->
+          <div *ngFor="let appointment of getAppointmentsForDateAndHour(day, hour)" 
+               class="appointment"
+               [style.background-color]="appointment.color"
+               draggable="true"
+               (dragstart)="onDragStart($event, appointment)">
+            <div class="appointment-title">{{ appointment.title }}</div>
+            <div class="appointment-time">{{ formatTime(appointment.startTime) }} - {{ formatTime(appointment.endTime) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day View -->
+  <div *ngIf="currentView === 'day'" class="day-view">
+    <div class="day-header">
+      <h3>{{ formatDate(currentDate) }}</h3>
+    </div>
+    
+    <div class="day-time-slots">
+      <div *ngFor="let hour of hours" class="hour-block">
+        <div class="hour-label">{{ hour.toString().padStart(2, '0') }}:00</div>
+        <div class="hour-content" 
+             (click)="openAppointmentModal(currentDate, hour)"
+             (dragover)="onDragOver($event)"
+             (drop)="onDrop($event, currentDate, hour)">
+          
+          <!-- Appointments -->
+          <div *ngFor="let appointment of getAppointmentsForDateAndHour(currentDate, hour)" 
+               class="appointment day-appointment"
+               [style.background-color]="appointment.color"
+               draggable="true"
+               (dragstart)="onDragStart($event, appointment)">
+            <div class="appointment-title">{{ appointment.title }}</div>
+            <div class="appointment-time">{{ formatTime(appointment.startTime) }} - {{ formatTime(appointment.endTime) }}</div>
+            <div class="appointment-description" *ngIf="appointment.description">{{ appointment.description }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appointment Modal -->
+  <div *ngIf="showAppointmentModal" class="modal-overlay" (click)="closeAppointmentModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>Add Appointment</h3>
+      <form (ngSubmit)="saveAppointment()">
+        <div class="form-group">
+          <label>Title:</label>
+          <input type="text" [(ngModel)]="newAppointment.title" name="title" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Time:</label>
+            <input type="datetime-local" 
+                   [value]="newAppointment.startTime ? formatDateTimeLocal(newAppointment.startTime) : ''" 
+                   (change)="onStartTimeChange($event)"
+                   name="startTime" required>
+          </div>
+          
+          <div class="form-group">
+            <label>End Time:</label>
+            <input type="datetime-local" 
+                   [value]="newAppointment.endTime ? formatDateTimeLocal(newAppointment.endTime) : ''" 
+                   (change)="onEndTimeChange($event)"
+                   name="endTime" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description:</label>
+          <textarea [(ngModel)]="newAppointment.description" name="description" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Color:</label>
+          <input type="color" [(ngModel)]="newAppointment.color" name="color">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="closeAppointmentModal()">Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
